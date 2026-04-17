@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MagicPasscode">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <title>MagicPasscode</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-top: hsl(222, 50%, 20%);
+      --bg-bot: hsl(224, 70%, 9%);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, "Helvetica Neue", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* ============================================================
+       LOCK SCREEN
+    ============================================================ */
+    #lockScreen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center;
+      background: linear-gradient(to bottom, var(--bg-top), var(--bg-bot));
+      overflow: hidden;
+    }
+
+    #wallpaper {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: opacity 0.3s;
+    }
+    #wallpaperOverlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+    }
+
+    /* Top safe area spacer */
+    #safeTop { height: env(safe-area-inset-top, 20px); flex-shrink: 0; }
+
+    #clockArea {
+      position: relative; z-index: 2;
+      text-align: center;
+      padding-top: 24px;
+      flex-shrink: 0;
+    }
+    #clockTime {
+      font-size: 80px;
+      font-weight: 100;
+      color: white;
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+    #clockDate {
+      font-size: 18px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.92);
+      margin-top: 6px;
+    }
+
+    .spacer { flex: 1; }
+
+    #hintText {
+      position: relative; z-index: 2;
+      font-size: 19px;
+      font-weight: 400;
+      color: white;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Dots */
+    #dotsWrap {
+      position: relative; z-index: 2;
+      margin-bottom: 32px;
+      flex-shrink: 0;
+    }
+    #dotsRow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      transition: gap 0.2s;
+    }
+    .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid white;
+      background: transparent;
+      transition: background 0.1s ease;
+      flex-shrink: 0;
+    }
+    .dot.filled { background: white; }
+
+    /* Shake animation */
+    @keyframes shake {
+      0%   { transform: translateX(0); }
+      10%  { transform: translateX(-14px); }
+      25%  { transform: translateX(14px); }
+      40%  { transform: translateX(-11px); }
+      55%  { transform: translateX(11px); }
+      70%  { transform: translateX(-7px); }
+      85%  { transform: translateX(7px); }
+      100% { transform: translateX(0); }
+    }
+    #dotsWrap.shaking { animation: shake 0.5s ease; }
+
+    /* Numpad */
+    #numpad {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+    .numRow {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+    .numBtn {
+      width: 78px; height: 78px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.175);
+      border: none; cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      -webkit-appearance: none;
+      transition: background 0.08s;
+      flex-shrink: 0;
+    }
+    .numBtn:active, .numBtn.highlighted {
+      background: rgba(255,255,255,0.42);
+    }
+    .numBtn.empty { background: transparent; pointer-events: none; }
+    .numBtn.del-btn { background: transparent; }
+    .numBtn.del-btn:active { background: rgba(255,255,255,0.2); }
+
+    .numBig {
+      font-size: 34px;
+      font-weight: 200;
+      color: white;
+      line-height: 1;
+    }
+    .numSub {
+      font-size: 9px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 2px;
+      margin-top: -1px;
+    }
+    .del-icon {
+      font-size: 22px;
+      color: white;
+    }
+
+    /* Bottom buttons */
+    #bottomButtons {
+      position: relative; z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 20px;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+      flex-shrink: 0;
+    }
+    .bottomBtn {
+      font-size: 17px;
+      font-weight: 400;
+      color: white;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      min-width: 90px;
+      -webkit-appearance: none;
+    }
+
+    /* Back tap area (top-left) */
+    #backTapArea {
+      position: absolute;
+      top: 0; left: 0;
+      width: 90px; height: 90px;
+      z-index: 10;
+    }
+
+    /* Touch overlay (main mode) */
+    #touchOverlay {
+      position: absolute; inset: 0;
+      z-index: 5;
+      display: none;
+    }
+
+    /* Fade overlay */
+    #fadeOverlay {
+      position: absolute; inset: 0;
+      background: black;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 20;
+      transition: opacity 0.35s ease-out;
+    }
+    #fadeOverlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* Mode indicator badge (subtle) */
+    #modeBadge {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 20px) + 8px);
+      right: 16px;
+      z-index: 15;
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 3px 7px;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       SETTINGS SCREEN
+    ============================================================ */
+    #settingsScreen {
+      position: fixed; inset: 0;
+      background: #1c1c1e;
+      color: white;
+      display: none;
+      flex-direction: column;
+      z-index: 100;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #settingsScreen.visible {
+      display: flex;
+    }
+
+    .settingsHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      padding-top: calc(env(safe-area-inset-top, 20px) + 16px);
+      background: #2c2c2e;
+      flex-shrink: 0;
+    }
+    .settingsTitle {
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .settingsDone {
+      font-size: 17px;
+      font-weight: 600;
+      color: #0a84ff;
+      background: none;
+      border: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+    }
+
+    .settingsBody {
+      flex: 1;
+      padding: 20px 0;
+    }
+
+    .settingsSection {
+      margin-bottom: 32px;
+    }
+    .settingsSectionHeader {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 20px 8px;
+    }
+    .settingsRow {
+      background: #2c2c2e;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 50px;
+      }
+      .settingsRow:first-of-type { border-top: 1px solid rgba(255,255,255,0.08); }
+      .settingsLabel {
+        font-size: 17px;
+        font-weight: 400;
+        color: white;
+        flex-shrink: 0;
+      }
+      .settingsValue {
+        font-size: 17px;
+        color: rgba(255,255,255,0.55);
+      }
+
+      /* Segmented control */
+      .segControl {
+        display: flex;
+        background: rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 2px;
+        gap: 2px;
+      }
+      .segBtn {
+        font-size: 15px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.6);
+        background: none;
+        border: none;
+        border-radius: 6px;
+        padding: 5px 20px;
+        cursor: pointer;
+        transition: all 0.15s;
+        -webkit-appearance: none;
+      }
+      .segBtn.active {
+        background: rgba(255,255,255,0.95);
+        color: #000;
+      }
+
+      /* Toggle switch */
+      .toggle {
+        position: relative;
+        width: 51px; height: 31px;
+        flex-shrink: 0;
+      }
+      .toggle input { display: none; }
+      .toggleTrack {
+        position: absolute; inset: 0;
+        background: rgba(255,255,255,0.18);
+        border-radius: 15.5px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .toggle input:checked + .toggleTrack { background: #34c759; }
+      .toggleThumb {
+        position: absolute;
+        top: 2px; left: 2px;
+        width: 27px; height: 27px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.2s;
+        pointer-events: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+      .toggle input:checked ~ .toggleThumb { transform: translateX(20px); }
+
+      /* Slider */
+      .sliderWrap {
+        display: flex; flex-direction: column; gap: 6px;
+        width: 100%;
+      }
+      .sliderRow {
+        display: flex; align-items: center; gap: 10px;
+      }
+      input[type=range] {
+        flex: 1;
+        -webkit-appearance: none;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255,255,255,0.2);
+        outline: none;
+      }
+      input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      }
+      .sliderVal {
+        font-size: 15px;
+        color: rgba(255,255,255,0.6);
+        min-width: 36px;
+        text-align: right;
+      }
+
+      /* PIN input */
+      .pinInput {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: white;
+        font-size: 20px;
+        font-family: -apple-system, monospace;
+        letter-spacing: 6px;
+        padding: 8px 14px;
+        width: 140px;
+        text-align: center;
+        outline: none;
+        -webkit-appearance: none;
+      }
+      .pinInput::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 2px; }
+
+      /* PIN history */
+      .historyItem {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .historyPin {
+        font-family: -apple-system, monospace;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 4px;
+      }
+      .historyTime {
+        font-size: 13px;
+        color: rgba(255,255,255,0.45);
+      }
+
+      /* Destructive button */
+      .btnDestructive {
+        font-size: 17px;
+        color: #ff453a;
+        background: none;
+        border: none;
+        cursor: pointer;
+        -webkit-appearance: none;
+        padding: 2px      color: rgba(255,255,255,0.5);
+      font-size: 22px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .wallpaperThumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* URL param toast */
+    #pinToast {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 20px) + 12px);
+      left: 50%; transform: translateX(-50%);
+      background: rgba(50,50,50,0.92);
+      color: white;
+      font-size: 14px;
+      padding: 10px 20px;
+      border-radius: 20px;
+      white-space: nowrap;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #pinToast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ======================================================
+     LOCK SCREEN
+====================================================== -->
+<div id="lockScreen">
+  <div id="wallpaper"></div>
+  <div id="wallpaperOverlay"></div>
+
+  <div id="safeTop"></div>
+
+  <div id="modeBadge">デモ</div>
+
+  <!-- Clock -->
+  <div id="clockArea">
+    <div id="clockTime">00:00</div>
+    <div id="clockDate">−</div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div id="hintText">Touch ID またはパスコードを入力</div>
+
+  <!-- Dots -->
+  <div id="dotsWrap">
+    <div id="dotsRow"></div>
+  </div>
+
+  <!-- Number pad -->
+  <div id="numpad">
+    <div class="numRow">
+      <button class="numBtn" data-num="1"><span class="numBig">1</span><span class="numSub">&nbsp;</span></button>
+      <button class="numBtn" data-num="2"><span class="numBig">2</span><span class="numSub">ABC</span></button>
+      <button class="numBtn" data-num="3"><span class="numBig">3</span><span class="numSub">DEF</span></button>
+    </div>
+    <div class="numRow">
+      <button class="numBtn" data-num="4"><span class="numBig">4</span><span class="numSub">GHI</span></button>
+      <button class="numBtn" data-num="5"><span class="numBig">5</span><span class="numSub">JKL</span></button>
+      <button class="numBtn" data-num="6"><span class="numBig">6</span><span class="numSub">MNO</span></button>
+    </div>
+    <div class="numRow">
+      <button class="numBtn" data-num="7"><span class="numBig">7</span><span class="numSub">PQRS</span></button>
+      <button class="numBtn" data-num="8"><span class="numBig">8</span><span class="numSub">TUV</span></button>
+      <button class="numBtn" data-num="9"><span class="numBig">9</span><span class="numSub">WXYZ</span></button>
+    </div>
+    <div class="numRow">
+      <button class="numBtn empty" aria-hidden="true"></button>
+      <button class="numBtn" data-num="0"><span class="numBig">0</span></button>
+      <button class="numBtn del-btn" id="delBtn"><span class="del-icon">⌫</span></button>
+    </div>
+  </div>
+
+  <!-- Bottom buttons -->
+  <div id="bottomButtons">
+    <button class="bottomBtn" id="emergencyBtn">緊急</button>
+    <button class="bottomBtn" id="cancelBtn">キャンセル</button>
+  </div>
+
+  <!-- Hidden tap areas -->
+  <div id="backTapArea"></div>
+  <div id="touchOverlay"></div>
+  <div id="fadeOverlay"></div>
+</div>
+
+<!-- ======================================================
+     SETTINGS SCREEN
+====================================================== -->
+<div id="settingsScreen">
+  <div class="settingsHeader">
+    <div class="settingsTitle">設定</div>
+    <button class="settingsDone" id="settingsDoneBtn">完了</button>
+  </div>
+
+  <div class="settingsBody">
+
+    <!-- Passcode settings -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">パスコード</div>
+
+      <div class="settingsRow">
+        <span class="settingsLabel">桁数</span>
+        <div class="segControl">
+          <button class="segBtn" id="seg4" data-digits="4">4桁</button>
+          <button class="segBtn" id="seg6" data-digits="6">6桁</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animation timing -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">ドットアニメーション（秒）</div>
+
+      <div class="settingsRow" style="flex-direction:column; align-items:stretch; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="settingsLabel">最初のドット</span>
+        </div>
+        <div class="sliderRow">
+          <input type="range" id="sliderFirst" min="0.1" max="3.0" step="0.1">
+          <span class="sliderVal" id="valFirst">0.8</span>
+        </div>
+      </div>
+
+      <div class="settingsRow" style="flex-direction:column; align-items:stretch; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="settingsLabel">中間のドット</span>
+        </div>
+        <div class="sliderRow">
+          <input type="range" id="sliderMiddle" min="0.1" max="3.0" step="0.1">
+          <span class="sliderVal" id="valMiddle">0.5</span>
+        </div>
+      </div>
+
+      <div class="settingsRow" style="flex-direction:column; align-items:stretch; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="settingsLabel">最後のドット</span>
+        </div>
+        <div class="sliderRow">
+          <input type="range" id="sliderLast" min="0.1" max="3.0" step="0.1">
+          <span class="sliderVal" id="valLast">0.7</span>
+        </div>
+      </div>
+
+      <div class="settingsRow">
+        <span class="settingsLabel">ボタン押下エフェクト</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggleEffect">
+          <div class="toggleTrack"></div>
+          <div class="toggleThumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Force PIN -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">フォースPIN（自動入力されるコード）</div>
+
+      <div class="settingsRow">
+        <span class="settingsLabel">PIN</span>
+        <input type="tel" class="pinInput" id="forcePinInput"
+               maxlength="6" placeholder="----" autocomplete="off" inputmode="numeric">
+      </div>
+      <div class="settingsRow" style="justify-content:flex-start; gap:8px;">
+        <span style="font-size:13px; color:rgba(255,255,255,0.45); line-height:1.4;">
+          Shortcutsからは <code style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">?pin=XXXX</code> をURLに付して開くと自動セットされます
+        </span>
+      </div>
+    </div>
+
+    <!-- Wallpaper -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">壁紙</div>
+      <div class="settingsRow">
+        <span class="settingsLabel">壁紙画像</span>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="wallpaperThumb" id="wallpaperThumb">🌌</div>
+          <button class="settingsDone" id="wallpaperPickBtn" style="color:#0a84ff;">選択</button>
+          <input type="file" id="wallpaperFileInput" accept="image/*">
+        </div>
+      </div>
+      <div class="settingsRow">
+        <button class="btnDestructive" id="wallpaperClearBtn">壁紙を削除</button>
+      </div>
+    </div>
+
+    <!-- PIN History -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">PIN履歴</div>
+      <div id="pinHistoryList">
+        <div class="settingsRow">
+          <span style="color:rgba(255,255,255,0.45); font-size:15px;">まだ記録されていません</span>
+        </div>
+      </div>
+      <div class="settingsRow">
+        <button class="btnDestructive" id="clearHistoryBtn">すべて削除</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast for URL param PIN notification -->
+<div id="pinToast"></div>
+
+<script>
+// ============================================================
+// SETTINGS & STORAGE
+// ============================================================
+const DEFAULT_SETTINGS = {
+  digitCount: 6,
+  delayFirst: 0.8,
+  delayMiddle: 0.5,
+  delayLast: 0.7,
+  showButtonEffect: false,
+  forcePin: '',
+  pinHistory: [],
+  wallpaperData: null
+};
+
+let settings = { ...DEFAULT_SETTINGS };
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem('mp_settings');
+    if (raw) Object.assign(settings, JSON.parse(raw));
+  } catch(e) {}
+}
+
+function saveSettings() {
+  try { localStorage.setItem('mp_settings', JSON.stringify(settings)); } catch(e) {}
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let mode = 'demo'; // 'demo' | 'main'
+let triggered = false;
+let animating = false;
+let filledDots = 0;
+let enteredCode = '';
+let highlightedBtn = null;
+let dotTimers = [];
+let backTapCount = 0;
+let backTapTimer = null;
+let emergencyLock = false;
+let cancelLock = false;
+let clockInterval = null;
+
+const DIGITS = ['0','1','2','3','4','5','6','7','8','9'];
+
+// ============================================================
+// DOM REFS
+// ============================================================
+const $lock        = document.getElementById('lockScreen');
+const $settings    = document.getElementById('settingsScreen');
+const $clockTime   = document.getElementById('clockTime');
+const $clockDate   = document.getElementById('clockDate');
+const $dotsRow     = document.getElementById('dotsRow');
+const $dotsWrap    = document.getElementById('dotsWrap');
+const $numpad      = document.getElementById('numpad');
+const $emergBtn    = document.getElementById('emergencyBtn');
+const $cancelBtn   = document.getElementById('cancelBtn');
+const $backTap     = document.getElementById('backTapArea');
+const $touchOvl    = document.getElementById('touchOverlay');
+const $fadeOvl     = document.getElementById('fadeOverlay');
+const $modeBadge   = document.getElementById('modeBadge');
+const $wallpaper   = document.getElementById('wallpaper');
+const $wallOvl     = document.getElementById('wallpaperOverlay');
+const $pinToast    = document.getElementById('pinToast');
+
+// Settings refs
+const $seg4        = document.getElementById('seg4');
+const $seg6        = document.getElementById('seg6');
+const $sliderFirst = document.getElementById('sliderFirst');
+const $sliderMid   = document.getElementById('sliderMiddle');
+const $sliderLast  = document.getElementById('sliderLast');
+const $valFirst    = document.getElementById('valFirst');
+const $valMid      = document.getElementById('valMiddle');
+const $valLast     = document.getElementById('valLast');
+const $toggleFx    = document.getElementById('toggleEffect');
+const $forcePinIn  = document.getElementById('forcePinInput');
+const $histList    = document.getElementById('pinHistoryList');
+const $clearHist   = document.getElementById('clearHistoryBtn');
+const $wallThumb   = document.getElementById('wallpaperThumb');
+const $wallPick    = document.getElementById('wallpaperPickBtn');
+const $wallFile    = document.getElementById('wallpaperFileInput');
+const $wallClear   = document.getElementById('wallpaperClearBtn');
+const $settDone    = document.getElementById('settingsDoneBtn');
+
+// ============================================================
+// CLOCK
+// ============================================================
+const JP_DAYS = ['日','月','火','水','木','金','土'];
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  $clockTime.textContent = h + ':' + m;
+
+  const mo = now.getMonth() + 1;
+  const d  = now.getDate();
+  const wd = JP_DAYS[now.getDay()];
+  $clockDate.textContent = mo + '月' + d + '日 ' + wd + '曜日';
+}
+
+function startClock() {
+  updateClock();
+  clockInterval = setInterval(updateClock, 1000);
+}
+
+// ============================================================
+// DOTS
+// ============================================================
+function buildDots() {
+  $dotsRow.innerHTML = '';
+  const gap = settings.digitCount === 4 ? '24px' : '16px';
+  $dotsRow.style.gap = gap;
+  for (let i = 0; i < settings.digitCount; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.id = 'dot' + i;
+    $dotsRow.appendChild(dot);
+  }
+}
+
+function setDotFilled(index, filled) {
+  const dot = document.getElementById('dot' + index);
+  if (dot) {
+    if (filled) dot.classList.add('filled');
+    else dot.classList.remove('filled');
+  }
+}
+
+function updateDots() {
+  for (let i = 0; i < settings.digitCount; i++) {
+    setDotFilled(i, i < filledDots);
+  }
+}
+
+function triggerShake() {
+  $dotsWrap.classList.remove('shaking');
+  void $dotsWrap.offsetWidth; // reflow
+  $dotsWrap.classList.add('shaking');
+  setTimeout(() => $dotsWrap.classList.remove('shaking'), 600);
+}
+
+// ============================================================
+// VIBRATION (haptics approximation)
+// ============================================================
+function hapticLight() {
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+function hapticError() {
+  if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+}
+
+// ============================================================
+// NUMBER BUTTON HIGHLIGHT
+// ============================================================
+function highlightButton(num, durationMs = 120) {
+  if (highlightedBtn) {
+    const prev = document.querySelector('.numBtn[data-num="' + highlightedBtn + '"]');
+    if (prev) prev.classList.remove('highlighted');
+  }
+  highlightedBtn = num;
+  const btn = document.querySelector('.numBtn[data-num="' + num + '"]');
+  if (btn) {
+    btn.classList.add('highlighted');
+    setTimeout(() => {
+      btn.classList.remove('highlighted');
+      if (highlightedBtn === num) highlightedBtn = null;
+    }, durationMs);
+  }
+}
+
+// ============================================================
+// DEMO MODE — manual tap
+// ============================================================
+function demoTapNum(num) {
+  if (mode !== 'demo' || animating) return;
+  if (filledDots >= settings.digitCount) return;
+
+  highlightButton(num, 120);
+  hapticLight();
+  enteredCode += num;
+  filledDots++;
+  updateDots();
+
+  if (filledDots >= settings.digitCount) {
+    animating = true;
+    const entered = enteredCode;
+
+    // Check against forcePin
+    const fp = settings.forcePin.trim();
+    if (fp && entered === fp) {
+      triggered = true;
+      setTimeout(finishAndExit, 350);
+    } else {
+      // Wrong → shake
+      setTimeout(() => {
+        hapticError();
+        triggerShake();
+        setTimeout(() => {
+          filledDots = 0;
+          enteredCode = '';
+          updateDots();
+          animating = false;
+        }, 550);
+      }, 400);
+    }
+  }
+}
+
+function demoDel() {
+  if (mode !== 'demo' || animating) return;
+  if (filledDots <= 0) return;
+  filledDots--;
+  enteredCode = enteredCode.slice(0, -1);
+  updateDots();
+}
+
+// ============================================================
+// MAIN MODE — auto dot animation
+// ============================================================
+function startDotAnimation() {
+  if (animating || triggered) return;
+  triggered = true;
+  animating = true;
+  filledDots = 0;
+  enteredCode = '';
+  updateDots();
+  fillDot(0);
+}
+
+function fillDot(index) {
+  if (index >= settings.digitCount) {
+    dotTimers.push(setTimeout(finishAndExit, 500));
+    return;
+  }
+
+  let delay;
+  if (index === 0) delay = settings.delayFirst * 1000;
+  else if (index === settings.digitCount - 1) delay = settings.delayLast * 1000;
+  else delay = settings.delayMiddle * 1000;
+
+  const t = setTimeout(() => {
+    // Button flash effect
+    if (settings.showButtonEffect) {
+      const rnd = DIGITS[Math.floor(Math.random() * DIGITS.length)];
+      highlightButton(rnd, 120);
+    }
+    filledDots = index + 1;
+    updateDots();
+    hapticLight();
+    fillDot(index + 1);
+  }, delay);
+  dotTimers.push(t);
+}
+
+function finishAndExit() {
+  // Fade to black
+  $fadeOvl.classList.add('active');
+
+  // After black screen, tap to reset
+  setTimeout(() => {
+    $fadeOvl.addEventListener('click', resetToDemo, { once: true });
+    $fadeOvl.style.pointerEvents = 'all';
+  }, 400);
+}
+
+function resetToDemo() {
+  $fadeOvl.classList.remove('active');
+  $fadeOvl.style.pointerEvents = 'none';
+  mode = 'demo';
+  triggered = false;
+  animating = false;
+  filledDots = 0;
+  enteredCode = '';
+  updateDots();
+  dotTimers.forEach(clearTimeout);
+  dotTimers = [];
+  updateModeUI();
+}
+
+// ============================================================
+// MODE TOGGLE (キャンセル button)
+// ============================================================
+function toggleMode() {
+  if (animating) return;
+  cancelLock = true;
+  setTimeout(() => cancelLock = false, 500);
+
+  filledDots = 0;
+  enteredCode = '';
+  triggered = false;
+  dotTimers.forEach(clearTimeout);
+  dotTimers = [];
+  updateDots();
+
+  if (mode === 'demo') {
+    mode = 'main';
+  } else {
+    mode = 'demo';
+  }
+  updateModeUI();
+}
+
+function updateModeUI() {
+  if (mode === 'main') {
+    $modeBadge.textContent = 'メイン';
+    $modeBadge.style.color = 'rgba(52,199,89,0.8)';
+    $touchOvl.style.display = 'block';
+    // Numpad becomes non-interactive
+    $numpad.style.pointerEvents = 'none';
+    $numpad.style.opacity = '0.5';
+    $cancelBtn.style.opacity = '1';
+  } else {
+    $modeBadge.textContent = 'デぢ';
+    $modeBadge.style.color = 'rgba(255,255,255,0.45)';
+    $touchOvl.style.display = 'none';
+    $numpad.style.pointerEvents = '';
+    $numpad.style.opacity = '';
+    $cancelBtn.style.opacity = '';
+  }
+}
+
+// ============================================================
+// DIGIT COUNT TOGGLE (緊急 button)
+// ============================================================
+function toggleDigitCount() {
+  if (animating) return;
+  emergencyLock = true;
+  setTimeout(() => emergencyLock = false, 500);
+
+  settings.digitCount = settings.digitCount === 4 ? 6 : 4;
+  saveSettings();
+  filledDots = 0;
+  enteredCode = '';
+  triggered = false;
+  buildDots();
+  updateDots();
+}
+
+// ============================================================
+// BACK TAP (top-left triple tap → settings)
+// ============================================================
+function handleBackTap() {
+  backTapCount++;
+  clearTimeout(backTapTimer);
+  if (backTapCount >= 3) {
+    backTapCount = 0;
+    openSettings();
+  } else {
+    backTapTimer = setTimeout(() => backTapCount = 0, 1500);
+  }
+}
+
+// ============================================================
+// SCREEN TOUCH (main mode trigger)
+// ============================================================
+$touchOvl.addEventListener('click', (e) => {
+  if (cancelLock || emergencyLock) return;
+  if (mode !== 'main') return;
+  if (triggered || animating) return;
+  startDotAnimation();
+});
+
+// ============================================================
+// NUMPAD EVENTS
+// ============================================================
+document.querySelectorAll('.numBtn[data-num]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const num = btn.dataset.num;
+    if (mode === 'demo' && !animating) demoTapNum(num);
+  });
+});
+
+document.getElementById('delBtn').addEventListener('click', () => {
+  if (mode === 'demo' && !animating) demoDel();
+});
+
+$emergBtn.addEventListener('click', toggleDigitCount);
+$cancelBtn.addEventListener('click', toggleMode);
+$backTap.addEventListener('click', handleBackTap);
+
+// ============================================================
+// SETTINGS: OPEN / CLOSE
+// ============================================================
+function openSettings() {
+  syncSettingsUI();
+  renderPinHistory();
+  $settings.classList.add('visible');
+}
+
+function closeSettings() {
+  // Save forcePin from input
+  settings.forcePin = $forcePinIn.value.trim();
+  saveSettings();
+  $settings.classList.remove('visible');
+  // Rebuild dots in case digitCount changed
+  buildDots();
+  updateDots();
+}
+
+$settDone.addEventListener('click', closeSettings);
+
+// ============================================================
+// SETTINGS: SYNC UI ↔ STATE
+// ============================================================
+function syncSettingsUI() {
+  // Digit count
+  $seg4.classList.toggle('active', settings.digitCount === 4);
+  $seg6.classList.toggle('active', settings.digitCount === 6);
+
+  // Sliders
+  $sliderFirst.value = settings.delayFirst;
+  $valFirst.textContent = settings.delayFirst.toFixed(1);
+  $sliderMid.value   = settings.delayMiddle;
+  $valMid.textContent = settings.delayMiddle.toFixed(1);
+  $sliderLast.value  = settings.delayLast;
+  $valLast.textContent = settings.delayLast.toFixed(1);
+
+  // Effect toggle
+  $toggleFx.checked = settings.showButtonEffect;
+
+  // Force PIN
+  $forcePinIn.value = settings.forcePin;
+
+  // Wallpaper thumbnail
+  updateWallpaperThumb();
+}
+
+// Segmented control
+[$seg4, $seg6].forEach(btn => {
+  btn.addEventListener('click', () => {
+    const d = parseInt(btn.dataset.digits);
+    settings.digitCount = d;
+    $seg4.classList.toggle('active', d === 4);
+    $seg6.classList.toggle('active', d === 6);
+    saveSettings();
+  });
+});
+
+// Sliders
+$sliderFirst.addEventListener('input', () => {
+  settings.delayFirst = parseFloat($sliderFirst.value);
+  $valFirst.textContent = settings.delayFirst.toFixed(1);
+  saveSettings();
+});
+$sliderMid.addEventListener('input', () => {
+  settings.delayMiddle = parseFloat($sliderMid.value);
+  $valMid.textContent = settings.delayMiddle.toFixed(1);
+  saveSettings();
+});
+$sliderLast.addEventListener('input', () => {
+  settings.delayLast = parseFloat($sliderLast.value);
+  $valLast.textContent = settings.delayLast.toFixed(1);
+  saveSettings();
+});
+
+// Effect toggle
+$toggleFx.addEventListener('change', () => {
+  settings.showButtonEffect = $toggleFx.checked;
+  saveSettings();
+});
+
+// Force PIN input
+$forcePinIn.addEventListener('input', () => {
+  // Only allow digits
+  $forcePinIn.value = $forcePinIn.value.replace(/\D/g, '').slice(0, 6);
+  settings.forcePin = $forcePinIn.value;
+  saveSettings();
+});
+
+// ============================================================
+// PIN HISTORY
+// ============================================================
+function addPinHistory(pin) {
+  if (!pin) return;
+  settings.pinHistory.unshift({ pin, time: new Date().toISOString() });
+  if (settings.pinHistory.length > 20) settings.pinHistory.pop();
+  saveSettings();
+}
+
+function renderPinHistory() {
+  if (!settings.pinHistory || settings.pinHistory.length === 0) {
+    $histList.innerHTML = '<div class="settingsRow"><span style="color:rgba(255,255,255,0.45);font-size:15px;">まだ記録されていません</span></div>';
+    return;
+  }
+  $histList.innerHTML = settings.pinHistory.map(e => {
+    const dt = new Date(e.time);
+    const timeStr = dt.getMonth()+1 + '/' + dt.getDate() + ' ' +
+                    String(dt.getHours()).padStart(2,'0') + ':' +
+                    String(dt.getMinutes()).padStart(2,'0');
+    return `<div class="settingsRow historyItem">
+      <span class="historyPin">${e.pin}</span>
+      <span class="historyTime">${timeStr}</span>
+    </div>`;
+  }).join('');
+}
+
+$clearHist.addEventListener('click', () => {
+  settings.pinHistory = [];
+  saveSettings();
+  renderPinHistory();
+});
+
+// ============================================================
+// WALLPAPER
+// ============================================================
+function applyWallpaper(dataUrl) {
+  if (dataUrl) {
+    $wallpaper.style.backgroundImage = 'url(' + dataUrl + ')';
+    $wallOvl.style.display = 'block';
+  } else {
+    $wallpaper.style.backgroundImage = '';
+    $wallOvl.style.display = 'none';
+  }
+}
+
+function updateWallpaperThumb() {
+  if (settings.wallpaperData) {
+    $wallThumb.innerHTML = '<img src="' + settings.wallpaperData + '" alt="壁紙">';
+  } else {
+    $wallThumb.textContent = '🌌';
+  }
+}
+
+$wallPick.addEventListener('click', () => $wallFile.click());
+
+$wallFile.addEventListener('change', () => {
+  const file = $wallFile.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    settings.wallpaperData = e.target.result;
+    saveSettings();
+    applyWallpaper(settings.wallpaperData);
+    updateWallpaperThumb();
+  };
+  reader.readAsDataURL(file);
+});
+
+$wallClear.addEventListener('click', () => {
+  settings.wallpaperData = null;
+  saveSettings();
+  applyWallpaper(null);
+  updateWallpaperThumb();
+});
+
+// ============================================================
+// URL PARAM: ?pin=XXXX
+// ============================================================
+function checkUrlPin() {
+  const params = new URLSearchParams(window.location.search);
+  const pinParam = params.get('pin');
+  if (pinParam && /^\d{4,6}$/.test(pinParam)) {
+    settings.forcePin = pinParam;
+    saveSettings();
+    // Clean URL
+    const url = window.location.pathname;
+    history.replaceState({}, '', url);
+    // Show toast
+    showToast('✨ PIN セット：' + pinParam);
+  }
+}
+
+function showToast(msg) {
+  $pinToast.textContent = msg;
+  $pinToast.classList.add('show');
+  setTimeout(() => $pinToast.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// SERVICE WORKER REGISTRATION
+// ============================================================
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+// ============================================================
+// PREVENT DEFAULT BROWSER BEHAVIORS
+// ============================================================
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Prevent iOS rubber-band scroll
+document.body.addEventListener('touchstart', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  loadSettings();
+  checkUrlPin();
+  buildDots();
+  updateDots();
+  updateModeUI();
+  startClock();
+  applyWallpaper(settings.wallpaperData);
+  registerSW();
+}
+
+init();
+</script>
+</body>
+</html>
