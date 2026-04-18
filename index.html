@@ -37,7 +37,7 @@
       position: absolute; inset: 0;
       background-size: cover;
       background-position: center;
-      transition: opacity 0.3s;
+      transform-origin: center center;
     }
     #wallpaperOverlay {
       position: absolute; inset: 0;
@@ -45,9 +45,7 @@
       display: none;
     }
 
-    /* Top safe area spacer */
     #safeTop { height: env(safe-area-inset-top, 44px); flex-shrink: 0; }
-    /* 80px top spacer (matches iOS app) */
     #topSpacer { height: 80px; flex-shrink: 0; }
 
     .spacer { flex: 1; }
@@ -71,7 +69,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 16px;
       transition: gap 0.2s;
     }
     .dot {
@@ -83,6 +81,14 @@
       flex-shrink: 0;
     }
     .dot.filled { background: white; }
+
+    /* Dot pulse for unlock effect */
+    @keyframes dotPulse {
+      0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+      50%  { transform: scale(1.4); box-shadow: 0 0 8px 4px rgba(255,255,255,0.4); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+    .dot.pulse { animation: dotPulse 0.4s ease-out forwards; }
 
     /* Shake animation */
     @keyframes shake {
@@ -102,7 +108,6 @@
       position: relative; z-index: 2;
       display: flex; flex-direction: column;
       gap: 16px;
-      margin-bottom: 0;
       flex-shrink: 0;
     }
     .numRow {
@@ -125,8 +130,6 @@
       background: rgba(255,255,255,0.42);
     }
     .numBtn.empty { background: transparent; pointer-events: none; }
-    .numBtn.del-btn { background: transparent; pointer-events: none; }
-
     .numBig {
       font-size: 36px;
       font-weight: 100;
@@ -140,6 +143,7 @@
       letter-spacing: 2px;
       margin-top: -1px;
     }
+
     /* Bottom buttons */
     #bottomButtons {
       position: relative; z-index: 2;
@@ -185,114 +189,164 @@
       opacity: 0;
       pointer-events: none;
       z-index: 20;
-      transition: opacity 0.35s ease-out;
+      transition: opacity 0.3s ease-out;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
     }
-    #fadeOverlay.active {
-      opacity: 1;
-      pointer-events: all;
+    #fadeOverlay.active { opacity: 1; pointer-events: all; }
+    #fadeHint {
+      color: rgba(255,255,255,0);
+      font-size: 14px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 24px);
+      transition: color 1.5s ease-in;
     }
+    #fadeOverlay.active #fadeHint { color: rgba(255,255,255,0.4); }
 
     /* ============================================================
-       SETTINGS SCREEN
+       SETTINGS SCREEN (iOS-style light mode)
     ============================================================ */
     #settingsScreen {
       position: fixed; inset: 0;
-      background: #1c1c1e;
-      color: white;
+      background: #f2f2f7;
       display: none;
       flex-direction: column;
       z-index: 100;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
-    #settingsScreen.visible {
-      display: flex;
-    }
+    #settingsScreen.visible { display: flex; }
 
     .settingsHeader {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
-      padding-top: calc(env(safe-area-inset-top, 20px) + 16px);
-      background: #2c2c2e;
+      padding: 0 16px;
+      padding-top: env(safe-area-inset-top, 44px);
+      height: calc(env(safe-area-inset-top, 44px) + 44px);
+      background: rgba(242,242,247,0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,0,0,0.12);
       flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     .settingsTitle {
       font-size: 17px;
       font-weight: 600;
+      color: #000;
     }
-    .settingsDone {
+    .settingsDoneBtn {
       font-size: 17px;
       font-weight: 600;
-      color: #0a84ff;
+      color: #007aff;
       background: none;
       border: none;
       cursor: pointer;
       -webkit-appearance: none;
+      padding: 4px 0;
     }
 
     .settingsBody {
       flex: 1;
-      padding: 20px 0;
+      padding: 20px 0 40px;
     }
 
+    /* Start button (big blue) */
+    .startBtnWrap {
+      margin: 0 16px 8px;
+    }
+    .startBtn {
+      width: 100%;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      padding: 16px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .startBtn:active { background: #0062cc; }
+
+    /* Section */
     .settingsSection {
-      margin-bottom: 32px;
+      margin-bottom: 0;
     }
     .settingsSectionHeader {
       font-size: 13px;
       font-weight: 400;
-      color: rgba(255,255,255,0.55);
+      color: #6d6d72;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      padding: 0 20px 8px;
+      padding: 16px 20px 8px;
+    }
+    .settingsSectionFooter {
+      font-size: 13px;
+      color: #8e8e93;
+      padding: 8px 20px 16px;
+      line-height: 1.4;
+    }
+
+    /* Card (grouped rows) */
+    .settingsCard {
+      background: white;
+      margin: 0 16px;
+      border-radius: 12px;
+      overflow: hidden;
     }
     .settingsRow {
-      background: #2c2c2e;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 14px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      padding: 12px 16px;
       min-height: 50px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      gap: 12px;
     }
-    .settingsRow:first-of-type { border-top: 1px solid rgba(255,255,255,0.08); }
+    .settingsRow:last-child { border-bottom: none; }
     .settingsLabel {
       font-size: 17px;
-      font-weight: 400;
-      color: white;
+      color: #000;
       flex-shrink: 0;
     }
     .settingsValue {
       font-size: 17px;
-      color: rgba(255,255,255,0.55);
+      color: #8e8e93;
     }
 
-    /* Segmented control */
+    /* Segmented control (iOS style) */
     .segControl {
       display: flex;
-      background: rgba(255,255,255,0.12);
-      border-radius: 8px;
+      background: rgba(118,118,128,0.12);
+      border-radius: 9px;
       padding: 2px;
       gap: 2px;
     }
     .segBtn {
       font-size: 15px;
       font-weight: 500;
-      color: rgba(255,255,255,0.6);
+      color: #000;
       background: none;
       border: none;
-      border-radius: 6px;
+      border-radius: 7px;
       padding: 5px 20px;
       cursor: pointer;
       transition: all 0.15s;
       -webkit-appearance: none;
+      opacity: 0.5;
     }
     .segBtn.active {
-      background: rgba(255,255,255,0.95);
-      color: #000;
+      background: white;
+      opacity: 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     }
 
     /* Toggle switch */
@@ -304,7 +358,7 @@
     .toggle input { display: none; }
     .toggleTrack {
       position: absolute; inset: 0;
-      background: rgba(255,255,255,0.18);
+      background: rgba(120,120,128,0.2);
       border-radius: 15.5px;
       cursor: pointer;
       transition: background 0.2s;
@@ -322,20 +376,34 @@
     }
     .toggle input:checked ~ .toggleThumb { transform: translateX(20px); }
 
-    /* Slider */
-    .sliderWrap {
-      display: flex; flex-direction: column; gap: 6px;
-      width: 100%;
+    /* Slider row */
+    .sliderSection {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
     }
-    .sliderRow {
-      display: flex; align-items: center; gap: 10px;
+    .sliderSection:last-child { border-bottom: none; }
+    .sliderLabelRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .sliderLabel {
+      font-size: 15px;
+      color: #000;
+    }
+    .sliderVal {
+      font-size: 14px;
+      color: #8e8e93;
+      min-width: 50px;
+      text-align: right;
     }
     input[type=range] {
-      flex: 1;
+      width: 100%;
       -webkit-appearance: none;
       height: 4px;
       border-radius: 2px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.15);
       outline: none;
     }
     input[type=range]::-webkit-slider-thumb {
@@ -343,75 +411,190 @@
       width: 22px; height: 22px;
       border-radius: 50%;
       background: white;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    }
-    .sliderVal {
-      font-size: 15px;
-      color: rgba(255,255,255,0.6);
-      min-width: 36px;
-      text-align: right;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
     }
 
-    /* PIN input */
-    .pinInput {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-      color: white;
-      font-size: 20px;
-      font-family: -apple-system, monospace;
-      letter-spacing: 6px;
-      padding: 8px 14px;
-      width: 140px;
-      text-align: center;
-      outline: none;
-      -webkit-appearance: none;
-    }
-    .pinInput::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 2px; }
-
-    /* PIN history */
-    .historyItem {
+    /* Trigger rows */
+    .triggerRow {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      width: 100%;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+      -webkit-appearance: none;
+      text-align: left;
+      gap: 12px;
     }
-    .historyPin {
-      font-family: -apple-system, monospace;
+    .triggerRow:last-child { border-bottom: none; }
+    .triggerIcon {
       font-size: 20px;
-      font-weight: 600;
-      letter-spacing: 4px;
+      width: 32px;
+      text-align: center;
+      flex-shrink: 0;
     }
-    .historyTime {
-      font-size: 13px;
-      color: rgba(255,255,255,0.45);
-    }
-
-    /* Destructive button */
-    .btnDestructive {
+    .triggerInfo { flex: 1; }
+    .triggerName {
       font-size: 17px;
-      color: #ff453a;
+      color: #000;
+      display: block;
+    }
+    .triggerDesc {
+      font-size: 13px;
+      color: #8e8e93;
+      display: block;
+      margin-top: 2px;
+    }
+    .triggerCheck {
+      color: #007aff;
+      font-size: 17px;
+      font-weight: 600;
+      display: none;
+    }
+    .triggerRow.selected .triggerCheck { display: block; }
+
+    /* Wallpaper rows */
+    .wallpaperThumbRow {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      gap: 14px;
+    }
+    .wallpaperThumb {
+      width: 52px; height: 90px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.1);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .wallpaperThumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .wallpaperThumbEmpty {
+      width: 52px; height: 90px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .wallpaperInfo { flex: 1; }
+    .wallpaperInfoTitle {
+      font-size: 15px;
+      font-weight: 500;
+      color: #000;
+    }
+    .wallpaperInfoSub {
+      font-size: 13px;
+      color: #8e8e93;
+      margin-top: 2px;
+    }
+    .btnDestructive {
+      font-size: 13px;
+      color: #ff3b30;
       background: none;
       border: none;
       cursor: pointer;
       -webkit-appearance: none;
-      padding: 2px 0;
+      padding: 4px 0;
+      margin-top: 4px;
+      display: block;
+    }
+    .wallpaperPickRow {
+      display: flex;
+      align-items: center;
+      padding: 13px 16px;
+      gap: 10px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    .wallpaperPickRow:last-child { border-bottom: none; }
+    .wallpaperPickIcon {
+      font-size: 18px;
+      color: #007aff;
+    }
+    .wallpaperPickLabel {
+      font-size: 17px;
+      color: #007aff;
     }
 
-    /* Wallpaper upload */
+    /* PIN input */
+    .pinInput {
+      background: transparent;
+      border: none;
+      color: #8e8e93;
+      font-size: 17px;
+      font-family: -apple-system, monospace;
+      letter-spacing: 4px;
+      width: 140px;
+      text-align: right;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .pinInput::placeholder { color: rgba(0,0,0,0.2); letter-spacing: 2px; }
+
+    /* Select */
+    .nativeSelect {
+      background: transparent;
+      border: none;
+      color: #8e8e93;
+      font-size: 17px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: right;
+      padding-right: 20px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0 center;
+    }
+
+    /* Hidden file input */
     #wallpaperFileInput { display: none; }
-    .wallpaperThumb {
-      width: 48px; height: 48px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.1);
-      display: flex; align-items: center; justify-content: center;
-      color: rgba(255,255,255,0.5);
-      font-size: 22px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .wallpaperThumb img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* URL param toast */
+    /* ============================================================
+       WALLPAPER PREVIEW SCREEN
+    ============================================================ */
+    #previewScreen {
+      position: fixed; inset: 0;
+      background: #000;
+      z-index: 200;
+      display: none;
+    }
+    #previewScreen.visible { display: block; }
+    #previewWallpaper {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      transform-origin: center center;
+    }
+    #previewWallpaperOverlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.35);
+    }
+    #previewUI {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center;
+    }
+    #previewCloseHint {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 44px) + 8px);
+      left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    /* Toast */
     #pinToast {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 20px) + 12px);
@@ -422,7 +605,7 @@
       padding: 10px 20px;
       border-radius: 20px;
       white-space: nowrap;
-      z-index: 200;
+      z-index: 300;
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
@@ -469,7 +652,7 @@
     <div class="numRow">
       <button class="numBtn empty" aria-hidden="true"></button>
       <button class="numBtn" data-num="0"><span class="numBig">0</span></button>
-      <button class="numBtn del-btn" aria-hidden="true"></button>
+      <button class="numBtn empty" aria-hidden="true"></button>
     </div>
   </div>
 
@@ -481,129 +664,241 @@
     <button class="bottomBtn" id="cancelBtn">キャンセル</button>
   </div>
 
-  <!-- Hidden tap areas -->
+  <!-- Hidden areas -->
   <div id="backTapArea"></div>
   <div id="touchOverlay"></div>
-  <div id="fadeOverlay"></div>
+  <div id="fadeOverlay"><span id="fadeHint">タップして戻る</span></div>
 </div>
 
 <!-- ======================================================
-     SETTINGS SCREEN
+     SETTINGS SCREEN (iOS light mode style)
 ====================================================== -->
 <div id="settingsScreen">
   <div class="settingsHeader">
-    <div class="settingsTitle">設定</div>
-    <button class="settingsDone" id="settingsDoneBtn">完了</button>
+    <div class="settingsTitle">マジック設定</div>
+    <button class="settingsDoneBtn" id="settingsDoneBtn">完了</button>
   </div>
 
   <div class="settingsBody">
 
-    <!-- Passcode settings -->
-    <div class="settingsSection">
-      <div class="settingsSectionHeader">パスコード</div>
+    <!-- ① パスコード画面を開始（上） -->
+    <div style="margin: 16px 16px 0;">
+      <button class="startBtn" id="startBtn1">🔒 パスコード画面を開始</button>
+    </div>
 
-      <div class="settingsRow">
-        <span class="settingsLabel">桁数</span>
-        <div class="segControl">
-          <button class="segBtn" id="seg4" data-digits="4">4桁</button>
-          <button class="segBtn" id="seg6" data-digits="6">6桁</button>
+    <!-- ② 壁紙 -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">壁紙（背景画像）</div>
+      <div class="settingsCard">
+        <!-- 壁紙設定済み or 未設定表示 -->
+        <div id="wallpaperThumbRow" class="wallpaperThumbRow" style="display:none; cursor:pointer;" id="wallpaperPreviewTrigger">
+          <div class="wallpaperThumb" id="wallpaperThumbImg"></div>
+          <div class="wallpaperInfo">
+            <div class="wallpaperInfoTitle">壁紙設定済み</div>
+            <div class="wallpaperInfoSub">タップでプレビュー</div>
+            <button class="btnDestructive" id="wallpaperClearBtn">壁紙を削除</button>
+          </div>
         </div>
+        <!-- 壁紙選択ボタン -->
+        <div class="wallpaperPickRow" id="wallpaperPickRow">
+          <span class="wallpaperPickIcon">🖼</span>
+          <span class="wallpaperPickLabel" id="wallpaperPickLabel">ロック画面の壁紙を選択</span>
+        </div>
+        <input type="file" id="wallpaperFileInput" accept="image/*">
+        <!-- スライダー群（壁紙あり時のみ表示） -->
+        <div id="wallpaperSliders" style="display:none;">
+          <div class="sliderSection">
+            <div class="sliderLabelRow">
+              <span class="sliderLabel">拡大率</span>
+              <span class="sliderVal" id="valScale">1.20x</span>
+            </div>
+            <input type="range" id="sliderScale" min="1.0" max="2.5" step="0.05">
+          </div>
+          <div class="sliderSection">
+            <div class="sliderLabelRow">
+              <span class="sliderLabel">上下位置</span>
+              <span class="sliderVal" id="valOffsetY">0pt</span>
+            </div>
+            <input type="range" id="sliderOffsetY" min="-300" max="300" step="5">
+          </div>
+          <div class="sliderSection">
+            <div class="sliderLabelRow">
+              <span class="sliderLabel">左右位置</span>
+              <span class="sliderVal" id="valOffsetX">0pt</span>
+            </div>
+            <input type="range" id="sliderOffsetX" min="-200" max="200" step="5">
+          </div>
+        </div>
+      </div>
+      <div class="settingsSectionFooter">プレビューでパスコード画面と重ねて確認できます</div>
+    </div>
+
+    <!-- ③ トリガー方法 -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">トリガー方法</div>
+      <div class="settingsCard">
+        <button class="triggerRow" data-trigger="screenTouch">
+          <span class="triggerIcon">👆</span>
+          <span class="triggerInfo">
+            <span class="triggerName">画面タッチ</span>
+            <span class="triggerDesc">画面のどこかをタップ</span>
+          </span>
+          <span class="triggerCheck">✓</span>
+        </button>
+        <button class="triggerRow" data-trigger="volumeButton">
+          <span class="triggerIcon">🔊</span>
+          <span class="triggerInfo">
+            <span class="triggerName">音量ボタン</span>
+            <span class="triggerDesc">音量ボタンを押す</span>
+          </span>
+          <span class="triggerCheck">✓</span>
+        </button>
+        <button class="triggerRow" data-trigger="cameraSensor">
+          <span class="triggerIcon">📷</span>
+          <span class="triggerInfo">
+            <span class="triggerName">カメラセンサー</span>
+            <span class="triggerDesc">インカメラ前に手をかざす</span>
+          </span>
+          <span class="triggerCheck">✓</span>
+        </button>
       </div>
     </div>
 
-    <!-- Animation timing -->
+    <!-- ④ パスコード桁数 -->
     <div class="settingsSection">
-      <div class="settingsSectionHeader">ドットアニメーション（秒）</div>
-
-      <div class="settingsRow" style="flex-direction:column; align-items:stretch; gap:6px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="settingsLabel">最初のドット</span>
-        </div>
-        <div class="sliderRow">
-          <input type="range" id="sliderFirst" min="0.1" max="3.0" step="0.1">
-          <span class="sliderVal" id="valFirst">0.8</span>
+      <div class="settingsSectionHeader">パスコード桁数</div>
+      <div class="settingsCard">
+        <div class="settingsRow" style="justify-content:center;">
+          <div class="segControl">
+            <button class="segBtn" id="seg4" data-digits="4">4桁</button>
+            <button class="segBtn" id="seg6" data-digits="6">6桁</button>
+          </div>
         </div>
       </div>
-
-      <div class="settingsRow" style="flex-direction:column; align-items:stretch; gap:6px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="settingsLabel">中間のドット</span>
-        </div>
-        <div class="sliderRow">
-          <input type="range" id="sliderMiddle" min="0.1" max="3.0" step="0.1">
-          <span class="sliderVal" id="valMiddle">0.5</span>
-        </div>
-      </div>
-
-      <div class="settingsRow" style="flex-direction:column; align-items:stretch; gap:6px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="settingsLabel">最後のドット</span>
-        </div>
-        <div class="sliderRow">
-          <input type="range" id="sliderLast" min="0.1" max="3.0" step="0.1">
-          <span class="sliderVal" id="valLast">0.7</span>
-        </div>
-      </div>
-
-      <div class="settingsRow">
-        <span class="settingsLabel">ボタン押下エフェクト</span>
-        <label class="toggle">
-          <input type="checkbox" id="toggleEffect">
-          <div class="toggleTrack"></div>
-          <div class="toggleThumb"></div>
-        </label>
-      </div>
+      <div class="settingsSectionFooter">「緊急」→桁数切替 /「キャンセル」→デモ⇔メイン切替</div>
     </div>
 
-    <!-- Force PIN -->
+    <!-- ⑤ メインモード入力タイミング -->
     <div class="settingsSection">
-      <div class="settingsSectionHeader">フォースPIN（自動入力されるコード）</div>
-
-      <div class="settingsRow">
-        <span class="settingsLabel">PIN</span>
-        <input type="tel" class="pinInput" id="forcePinInput"
-               maxlength="6" placeholder="----" autocomplete="off" inputmode="numeric">
-      </div>
-      <div class="settingsRow" style="justify-content:flex-start; gap:8px;">
-        <span style="font-size:13px; color:rgba(255,255,255,0.45); line-height:1.4;">
-          Shortcutsからは <code style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">?pin=XXXX</code> をURLに付けて開くと自動セットされます
-        </span>
-      </div>
-    </div>
-
-    <!-- Wallpaper -->
-    <div class="settingsSection">
-      <div class="settingsSectionHeader">壁紙</div>
-      <div class="settingsRow">
-        <span class="settingsLabel">壁紙画像</span>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div class="wallpaperThumb" id="wallpaperThumb">🌌</div>
-          <button class="settingsDone" id="wallpaperPickBtn" style="color:#0a84ff;">選択</button>
-          <input type="file" id="wallpaperFileInput" accept="image/*">
+      <div class="settingsSectionHeader">メインモード入力タイミング</div>
+      <div class="settingsCard">
+        <div class="sliderSection">
+          <div class="sliderLabelRow">
+            <span class="sliderLabel">① トリガー → 1回目</span>
+            <span class="sliderVal" id="valFirst">0.8秒</span>
+          </div>
+          <input type="range" id="sliderFirst" min="0.1" max="5.0" step="0.1">
         </div>
-      </div>
-      <div class="settingsRow">
-        <button class="btnDestructive" id="wallpaperClearBtn">壁紙を削除</button>
-      </div>
-    </div>
-
-    <!-- PIN History -->
-    <div class="settingsSection">
-      <div class="settingsSectionHeader">PIN履歴</div>
-      <div id="pinHistoryList">
+        <div class="sliderSection">
+          <div class="sliderLabelRow">
+            <span class="sliderLabel">② 中間の入力間隔</span>
+            <span class="sliderVal" id="valMiddle">0.5秒</span>
+          </div>
+          <input type="range" id="sliderMiddle" min="0.1" max="5.0" step="0.1">
+        </div>
+        <div class="sliderSection">
+          <div class="sliderLabelRow">
+            <span class="sliderLabel">③ 最後の入力間隔</span>
+            <span class="sliderVal" id="valLast">0.7秒</span>
+          </div>
+          <input type="range" id="sliderLast" min="0.1" max="5.0" step="0.1">
+        </div>
         <div class="settingsRow">
-          <span style="color:rgba(255,255,255,0.45); font-size:15px;">まだ記録されていません</span>
+          <span class="settingsLabel">ボタン押下エフェクトを表示</span>
+          <label class="toggle">
+            <input type="checkbox" id="toggleEffect">
+            <div class="toggleTrack"></div>
+            <div class="toggleThumb"></div>
+          </label>
         </div>
       </div>
-      <div class="settingsRow">
-        <button class="btnDestructive" id="clearHistoryBtn">すべて削除</button>
+      <div class="settingsSectionFooter" id="timingFooter">
+        [トリガー]→①→[1]→②→[2]→②→[3]→②→[4]→②→[5]→③→[6]<br>
+        <span id="effectFooter" style="display:none;">ONにすると自動入力時にランダムなボタンが光ります</span>
       </div>
     </div>
+
+    <!-- ⑥ MagicCalc連携 -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">MagicCalc連携</div>
+      <div class="settingsCard">
+        <div class="settingsRow">
+          <span class="settingsLabel">解除コードに使う数値</span>
+          <select class="nativeSelect" id="operandSelect">
+            <option value="1">1番目の数</option>
+            <option value="2">2番目の数</option>
+            <option value="3">3番目の数</option>
+            <option value="4">計算結果</option>
+          </select>
+        </div>
+        <div class="settingsRow">
+          <span class="settingsLabel">フォースPIN</span>
+          <input type="tel" class="pinInput" id="forcePinInput"
+                 maxlength="6" placeholder="------"
+                 autocomplete="off" inputmode="numeric">
+        </div>
+      </div>
+      <div class="settingsSectionFooter">
+        MagicCalcで計算後に「マジック」ボタンを押すとデータが共有されます。デモモードで正しいコードを入力するとロック演出が発動します。<br>
+        Shortcutsからは <code style="background:rgba(0,0,0,0.08); padding:1px 5px; border-radius:4px; font-size:12px;">?pin=XXXX</code> をURLに付けて開くと自動セットされます。
+      </div>
+    </div>
+
+    <!-- ⑦ 起動設定 -->
+    <div class="settingsSection">
+      <div class="settingsSectionHeader">起動設定</div>
+      <div class="settingsCard">
+        <div class="settingsRow">
+          <span class="settingsLabel" style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:20px;">🔒</span>次回からパスコード画面で起動
+          </span>
+          <label class="toggle">
+            <input type="checkbox" id="toggleStartPasscode" checked>
+            <div class="toggleTrack"></div>
+            <div class="toggleThumb"></div>
+          </label>
+        </div>
+      </div>
+      <div class="settingsSectionFooter">ONにすると次回以降、この設定画面をスキップしてパスコード画面から起動します</div>
+    </div>
+
+    <!-- ⑧ パスコード画面を開始（下） -->
+    <div style="margin: 0 16px 8px;">
+      <button class="startBtn" id="startBtn2">🔒 パスコード画面を開始</button>
+    </div>
+    <div class="settingsSectionFooter" style="text-align:center;">左上3回タップ→設定に戻る</div>
 
   </div>
 </div>
 
-<!-- Toast for URL param PIN notification -->
+<!-- ======================================================
+     WALLPAPER PREVIEW SCREEN
+====================================================== -->
+<div id="previewScreen">
+  <div id="previewWallpaper"></div>
+  <div id="previewWallpaperOverlay"></div>
+  <div id="previewUI">
+    <div id="previewCloseHint">タップで閉じる</div>
+    <!-- Preview passcode UI (same as lock screen) -->
+    <div style="width:100%; display:flex; flex-direction:column; align-items:center; flex:1;">
+      <div style="height: calc(env(safe-area-inset-top, 44px) + 80px); flex-shrink:0;"></div>
+      <div style="font-size:20px; font-weight:400; color:rgba(255,255,255,0.8); margin-bottom:24px; flex-shrink:0; position:relative; z-index:2;">
+        Touch ID またはパスコードを入力
+      </div>
+      <div id="previewDots" style="display:flex; gap:16px; margin-bottom:40px; flex-shrink:0; position:relative; z-index:2;"></div>
+      <div style="position:relative; z-index:2; flex-shrink:0;">
+        <div id="previewNumpad"></div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; justify-content:space-between; width:100%; padding:0 16px; padding-bottom:calc(env(safe-area-inset-bottom,20px)+10px); flex-shrink:0; position:relative; z-index:2;">
+        <span style="font-size:17px; color:rgba(255,255,255,0.6); padding:14px 16px;">緊急</span>
+        <span style="font-size:17px; color:rgba(255,255,255,0.6); padding:14px 16px;">キャンセル</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
 <div id="pinToast"></div>
 
 <script>
@@ -617,8 +912,13 @@ const DEFAULT_SETTINGS = {
   delayLast: 0.7,
   showButtonEffect: false,
   forcePin: '',
-  pinHistory: [],
-  wallpaperData: null
+  wallpaperData: null,
+  wallpaperScale: 1.2,
+  wallpaperOffsetX: 0,
+  wallpaperOffsetY: 0,
+  triggerType: 'screenTouch',
+  remoteInputOperandIndex: 1,
+  startWithPasscode: true
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -667,25 +967,40 @@ const $fadeOvl     = document.getElementById('fadeOverlay');
 const $wallpaper   = document.getElementById('wallpaper');
 const $wallOvl     = document.getElementById('wallpaperOverlay');
 const $pinToast    = document.getElementById('pinToast');
+const $preview     = document.getElementById('previewScreen');
+const $previewWall = document.getElementById('previewWallpaper');
+const $previewDots = document.getElementById('previewDots');
+const $previewNums = document.getElementById('previewNumpad');
 
 // Settings refs
-const $seg4        = document.getElementById('seg4');
-const $seg6        = document.getElementById('seg6');
-const $sliderFirst = document.getElementById('sliderFirst');
-const $sliderMid   = document.getElementById('sliderMiddle');
-const $sliderLast  = document.getElementById('sliderLast');
-const $valFirst    = document.getElementById('valFirst');
-const $valMid      = document.getElementById('valMiddle');
-const $valLast     = document.getElementById('valLast');
-const $toggleFx    = document.getElementById('toggleEffect');
-const $forcePinIn  = document.getElementById('forcePinInput');
-const $histList    = document.getElementById('pinHistoryList');
-const $clearHist   = document.getElementById('clearHistoryBtn');
-const $wallThumb   = document.getElementById('wallpaperThumb');
-const $wallPick    = document.getElementById('wallpaperPickBtn');
-const $wallFile    = document.getElementById('wallpaperFileInput');
-const $wallClear   = document.getElementById('wallpaperClearBtn');
-const $settDone    = document.getElementById('settingsDoneBtn');
+const $seg4         = document.getElementById('seg4');
+const $seg6         = document.getElementById('seg6');
+const $sliderFirst  = document.getElementById('sliderFirst');
+const $sliderMid    = document.getElementById('sliderMiddle');
+const $sliderLast   = document.getElementById('sliderLast');
+const $valFirst     = document.getElementById('valFirst');
+const $valMid       = document.getElementById('valMiddle');
+const $valLast      = document.getElementById('valLast');
+const $toggleFx     = document.getElementById('toggleEffect');
+const $forcePinIn   = document.getElementById('forcePinInput');
+const $operandSel   = document.getElementById('operandSelect');
+const $toggleStart  = document.getElementById('toggleStartPasscode');
+const $wallThumbRow = document.getElementById('wallpaperThumbRow');
+const $wallThumbImg = document.getElementById('wallpaperThumbImg');
+const $wallPickRow  = document.getElementById('wallpaperPickRow');
+const $wallPickLbl  = document.getElementById('wallpaperPickLabel');
+const $wallClearBtn = document.getElementById('wallpaperClearBtn');
+const $wallFile     = document.getElementById('wallpaperFileInput');
+const $wallSliders  = document.getElementById('wallpaperSliders');
+const $sliderScale  = document.getElementById('sliderScale');
+const $sliderOY     = document.getElementById('sliderOffsetY');
+const $sliderOX     = document.getElementById('sliderOffsetX');
+const $valScale     = document.getElementById('valScale');
+const $valOY        = document.getElementById('valOffsetY');
+const $valOX        = document.getElementById('valOffsetX');
+const $settDone     = document.getElementById('settingsDoneBtn');
+const $timingFooter = document.getElementById('timingFooter');
+const $effectFooter = document.getElementById('effectFooter');
 
 // ============================================================
 // DOTS
@@ -718,13 +1033,25 @@ function updateDots() {
 
 function triggerShake() {
   $dotsWrap.classList.remove('shaking');
-  void $dotsWrap.offsetWidth; // reflow
+  void $dotsWrap.offsetWidth;
   $dotsWrap.classList.add('shaking');
   setTimeout(() => $dotsWrap.classList.remove('shaking'), 600);
 }
 
+// Pulse all filled dots (for unlock effect)
+function pulseAllDots() {
+  for (let i = 0; i < settings.digitCount; i++) {
+    const dot = document.getElementById('dot' + i);
+    if (dot) {
+      dot.classList.remove('pulse');
+      void dot.offsetWidth;
+      setTimeout(() => dot.classList.add('pulse'), i * 30);
+    }
+  }
+}
+
 // ============================================================
-// VIBRATION (haptics approximation)
+// VIBRATION
 // ============================================================
 function hapticLight() {
   if (navigator.vibrate) navigator.vibrate(10);
@@ -734,7 +1061,7 @@ function hapticError() {
 }
 
 // ============================================================
-// NUMBER BUTTON HIGHLIGHT
+// BUTTON HIGHLIGHT
 // ============================================================
 function highlightButton(num, durationMs = 120) {
   if (highlightedBtn) {
@@ -768,14 +1095,17 @@ function demoTapNum(num) {
   if (filledDots >= settings.digitCount) {
     animating = true;
     const entered = enteredCode;
-
-    // Check against forcePin
     const fp = settings.forcePin.trim();
+
     if (fp && entered === fp) {
+      // 正解 → ロック演出
       triggered = true;
-      setTimeout(finishAndExit, 350);
+      setTimeout(() => {
+        pulseAllDots();
+        setTimeout(finishAndExit, 400);
+      }, 200);
     } else {
-      // Wrong → shake
+      // 不正解 → シェイク
       setTimeout(() => {
         hapticError();
         triggerShake();
@@ -788,14 +1118,6 @@ function demoTapNum(num) {
       }, 400);
     }
   }
-}
-
-function demoDel() {
-  if (mode !== 'demo' || animating) return;
-  if (filledDots <= 0) return;
-  filledDots--;
-  enteredCode = enteredCode.slice(0, -1);
-  updateDots();
 }
 
 // ============================================================
@@ -813,7 +1135,10 @@ function startDotAnimation() {
 
 function fillDot(index) {
   if (index >= settings.digitCount) {
-    dotTimers.push(setTimeout(finishAndExit, 500));
+    dotTimers.push(setTimeout(() => {
+      pulseAllDots();
+      setTimeout(finishAndExit, 400);
+    }, 500));
     return;
   }
 
@@ -823,7 +1148,6 @@ function fillDot(index) {
   else delay = settings.delayMiddle * 1000;
 
   const t = setTimeout(() => {
-    // Button flash effect
     if (settings.showButtonEffect) {
       const rnd = DIGITS[Math.floor(Math.random() * DIGITS.length)];
       highlightButton(rnd, 120);
@@ -836,20 +1160,16 @@ function fillDot(index) {
   dotTimers.push(t);
 }
 
+// ============================================================
+// FINISH & EXIT (ロック解除エフェクト)
+// ============================================================
 function finishAndExit() {
-  // Fade to black
   $fadeOvl.classList.add('active');
-
-  // After black screen, tap to reset
-  setTimeout(() => {
-    $fadeOvl.addEventListener('click', resetToDemo, { once: true });
-    $fadeOvl.style.pointerEvents = 'all';
-  }, 400);
+  // fadeHint shows after fade completes (handled by CSS transition on #fadeOverlay.active #fadeHint)
 }
 
 function resetToDemo() {
   $fadeOvl.classList.remove('active');
-  $fadeOvl.style.pointerEvents = 'none';
   mode = 'demo';
   triggered = false;
   animating = false;
@@ -858,11 +1178,22 @@ function resetToDemo() {
   updateDots();
   dotTimers.forEach(clearTimeout);
   dotTimers = [];
+  // Clear dot pulse classes
+  for (let i = 0; i < settings.digitCount; i++) {
+    const dot = document.getElementById('dot' + i);
+    if (dot) dot.classList.remove('pulse');
+  }
   updateModeUI();
 }
 
+$fadeOvl.addEventListener('click', () => {
+  if ($fadeOvl.classList.contains('active')) {
+    resetToDemo();
+  }
+});
+
 // ============================================================
-// MODE TOGGLE (キャンセル button)
+// MODE TOGGLE (キャンセル)
 // ============================================================
 function toggleMode() {
   if (animating) return;
@@ -876,18 +1207,13 @@ function toggleMode() {
   dotTimers = [];
   updateDots();
 
-  if (mode === 'demo') {
-    mode = 'main';
-  } else {
-    mode = 'demo';
-  }
+  mode = (mode === 'demo') ? 'main' : 'demo';
   updateModeUI();
 }
 
 function updateModeUI() {
   if (mode === 'main') {
     $touchOvl.style.display = 'block';
-    // Numpad stays visible but non-interactive (matched iOS behavior)
     $numpad.style.pointerEvents = 'none';
     $cancelBtn.style.opacity = '1';
   } else {
@@ -898,7 +1224,7 @@ function updateModeUI() {
 }
 
 // ============================================================
-// DIGIT COUNT TOGGLE (緊急 button)
+// DIGIT COUNT TOGGLE (緊急)
 // ============================================================
 function toggleDigitCount() {
   if (animating) return;
@@ -912,10 +1238,11 @@ function toggleDigitCount() {
   triggered = false;
   buildDots();
   updateDots();
+  updateTimingFooter();
 }
 
 // ============================================================
-// BACK TAP (top-left triple tap → settings)
+// BACK TAP (top-left triple → settings)
 // ============================================================
 function handleBackTap() {
   backTapCount++;
@@ -929,9 +1256,9 @@ function handleBackTap() {
 }
 
 // ============================================================
-// SCREEN TOUCH (main mode trigger)
+// TOUCH OVERLAY
 // ============================================================
-$touchOvl.addEventListener('click', (e) => {
+$touchOvl.addEventListener('click', () => {
   if (cancelLock || emergencyLock) return;
   if (mode !== 'main') return;
   if (triggered || animating) return;
@@ -939,12 +1266,11 @@ $touchOvl.addEventListener('click', (e) => {
 });
 
 // ============================================================
-// NUMPAD EVENTS
+// NUMPAD
 // ============================================================
 document.querySelectorAll('.numBtn[data-num]').forEach(btn => {
   btn.addEventListener('click', () => {
-    const num = btn.dataset.num;
-    if (mode === 'demo' && !animating) demoTapNum(num);
+    if (mode === 'demo' && !animating) demoTapNum(btn.dataset.num);
   });
 });
 
@@ -957,121 +1283,133 @@ $backTap.addEventListener('click', handleBackTap);
 // ============================================================
 function openSettings() {
   syncSettingsUI();
-  renderPinHistory();
   $settings.classList.add('visible');
+  $settings.scrollTop = 0;
 }
 
 function closeSettings() {
-  // Save forcePin from input
   settings.forcePin = $forcePinIn.value.trim();
   saveSettings();
   $settings.classList.remove('visible');
-  // Rebuild dots in case digitCount changed
   buildDots();
   updateDots();
+  updateModeUI();
 }
 
 $settDone.addEventListener('click', closeSettings);
+document.getElementById('startBtn1').addEventListener('click', closeSettings);
+document.getElementById('startBtn2').addEventListener('click', closeSettings);
 
 // ============================================================
 // SETTINGS: SYNC UI ↔ STATE
 // ============================================================
 function syncSettingsUI() {
-  // Digit count
   $seg4.classList.toggle('active', settings.digitCount === 4);
   $seg6.classList.toggle('active', settings.digitCount === 6);
 
-  // Sliders
   $sliderFirst.value = settings.delayFirst;
-  $valFirst.textContent = settings.delayFirst.toFixed(1);
-  $sliderMid.value   = settings.delayMiddle;
-  $valMid.textContent = settings.delayMiddle.toFixed(1);
-  $sliderLast.value  = settings.delayLast;
-  $valLast.textContent = settings.delayLast.toFixed(1);
+  $valFirst.textContent = settings.delayFirst.toFixed(1) + '秒';
+  $sliderMid.value = settings.delayMiddle;
+  $valMid.textContent = settings.delayMiddle.toFixed(1) + '秒';
+  $sliderLast.value = settings.delayLast;
+  $valLast.textContent = settings.delayLast.toFixed(1) + '秒';
 
-  // Effect toggle
   $toggleFx.checked = settings.showButtonEffect;
+  $effectFooter.style.display = settings.showButtonEffect ? '' : 'none';
 
-  // Force PIN
   $forcePinIn.value = settings.forcePin;
+  $operandSel.value = String(settings.remoteInputOperandIndex);
+  $toggleStart.checked = settings.startWithPasscode !== false;
 
-  // Wallpaper thumbnail
-  updateWallpaperThumb();
+  $sliderScale.value = settings.wallpaperScale;
+  $valScale.textContent = settings.wallpaperScale.toFixed(2) + 'x';
+  $sliderOY.value = settings.wallpaperOffsetY;
+  $valOY.textContent = settings.wallpaperOffsetY + 'pt';
+  $sliderOX.value = settings.wallpaperOffsetX;
+  $valOX.textContent = settings.wallpaperOffsetX + 'pt';
+
+  updateWallpaperSettingsUI();
+  updateTriggerUI();
+  updateTimingFooter();
 }
 
-// Segmented control
+// Digit segmented
 [$seg4, $seg6].forEach(btn => {
   btn.addEventListener('click', () => {
-    const d = parseInt(btn.dataset.digits);
-    settings.digitCount = d;
-    $seg4.classList.toggle('active', d === 4);
-    $seg6.classList.toggle('active', d === 6);
+    settings.digitCount = parseInt(btn.dataset.digits);
+    $seg4.classList.toggle('active', settings.digitCount === 4);
+    $seg6.classList.toggle('active', settings.digitCount === 6);
     saveSettings();
+    updateTimingFooter();
   });
 });
 
-// Sliders
+// Timing sliders
 $sliderFirst.addEventListener('input', () => {
   settings.delayFirst = parseFloat($sliderFirst.value);
-  $valFirst.textContent = settings.delayFirst.toFixed(1);
+  $valFirst.textContent = settings.delayFirst.toFixed(1) + '秒';
   saveSettings();
 });
 $sliderMid.addEventListener('input', () => {
   settings.delayMiddle = parseFloat($sliderMid.value);
-  $valMid.textContent = settings.delayMiddle.toFixed(1);
+  $valMid.textContent = settings.delayMiddle.toFixed(1) + '秒';
   saveSettings();
 });
 $sliderLast.addEventListener('input', () => {
   settings.delayLast = parseFloat($sliderLast.value);
-  $valLast.textContent = settings.delayLast.toFixed(1);
+  $valLast.textContent = settings.delayLast.toFixed(1) + '秒';
   saveSettings();
 });
 
 // Effect toggle
 $toggleFx.addEventListener('change', () => {
   settings.showButtonEffect = $toggleFx.checked;
+  $effectFooter.style.display = settings.showButtonEffect ? '' : 'none';
   saveSettings();
 });
 
-// Force PIN input
+// Force PIN
 $forcePinIn.addEventListener('input', () => {
-  // Only allow digits
   $forcePinIn.value = $forcePinIn.value.replace(/\D/g, '').slice(0, 6);
   settings.forcePin = $forcePinIn.value;
   saveSettings();
 });
 
-// ============================================================
-// PIN HISTORY
-// ============================================================
-function addPinHistory(pin) {
-  if (!pin) return;
-  settings.pinHistory.unshift({ pin, time: new Date().toISOString() });
-  if (settings.pinHistory.length > 20) settings.pinHistory.pop();
+// Operand select
+$operandSel.addEventListener('change', () => {
+  settings.remoteInputOperandIndex = parseInt($operandSel.value);
   saveSettings();
+});
+
+// Start with passcode toggle
+$toggleStart.addEventListener('change', () => {
+  settings.startWithPasscode = $toggleStart.checked;
+  saveSettings();
+});
+
+// Timing footer
+function updateTimingFooter() {
+  const base = settings.digitCount === 4
+    ? '[トリガー]→①→[1]→②→[2]→②→[3]→③→[4]'
+    : '[トリガー]→①→[1]→②→[2]→②→[3]→②→[4]→②→[5]→③→[6]';
+  $timingFooter.childNodes[0].textContent = base;
 }
 
-function renderPinHistory() {
-  if (!settings.pinHistory || settings.pinHistory.length === 0) {
-    $histList.innerHTML = '<div class="settingsRow"><span style="color:rgba(255,255,255,0.45);font-size:15px;">まだ記録されていません</span></div>';
-    return;
-  }
-  $histList.innerHTML = settings.pinHistory.map(e => {
-    const dt = new Date(e.time);
-    const timeStr = dt.getMonth()+1 + '/' + dt.getDate() + ' ' +
-                    String(dt.getHours()).padStart(2,'0') + ':' +
-                    String(dt.getMinutes()).padStart(2,'0');
-    return `<div class="settingsRow historyItem">
-      <span class="historyPin">${e.pin}</span>
-      <span class="historyTime">${timeStr}</span>
-    </div>`;
-  }).join('');
+// ============================================================
+// TRIGGER SELECTION
+// ============================================================
+function updateTriggerUI() {
+  document.querySelectorAll('.triggerRow').forEach(row => {
+    row.classList.toggle('selected', row.dataset.trigger === settings.triggerType);
+  });
 }
 
-$clearHist.addEventListener('click', () => {
-  settings.pinHistory = [];
-  saveSettings();
-  renderPinHistory();
+document.querySelectorAll('.triggerRow').forEach(row => {
+  row.addEventListener('click', () => {
+    settings.triggerType = row.dataset.trigger;
+    saveSettings();
+    updateTriggerUI();
+  });
 });
 
 // ============================================================
@@ -1085,17 +1423,51 @@ function applyWallpaper(dataUrl) {
     $wallpaper.style.backgroundImage = '';
     $wallOvl.style.display = 'none';
   }
+  applyWallpaperTransform();
 }
 
-function updateWallpaperThumb() {
-  if (settings.wallpaperData) {
-    $wallThumb.innerHTML = '<img src="' + settings.wallpaperData + '" alt="壁紙">';
-  } else {
-    $wallThumb.textContent = '🌌';
+function applyWallpaperTransform() {
+  const s = settings.wallpaperScale || 1.2;
+  const ox = settings.wallpaperOffsetX || 0;
+  const oy = settings.wallpaperOffsetY || 0;
+  $wallpaper.style.transform = `translate(${ox}px, ${oy}px) scale(${s})`;
+}
+
+function updateWallpaperSettingsUI() {
+  const hasWallpaper = !!settings.wallpaperData;
+  $wallThumbRow.style.display = hasWallpaper ? '' : 'none';
+  $wallPickLbl.textContent = hasWallpaper ? '壁紙を変更' : 'ロック画面の壁紙を選択';
+  $wallSliders.style.display = hasWallpaper ? '' : 'none';
+  if (hasWallpaper) {
+    $wallThumbImg.innerHTML = '<img src="' + settings.wallpaperData + '" alt="壁紙">';
   }
 }
 
-$wallPick.addEventListener('click', () => $wallFile.click());
+// Wallpaper sliders
+$sliderScale.addEventListener('input', () => {
+  settings.wallpaperScale = parseFloat($sliderScale.value);
+  $valScale.textContent = settings.wallpaperScale.toFixed(2) + 'x';
+  saveSettings();
+  applyWallpaperTransform();
+  syncPreviewTransform();
+});
+$sliderOY.addEventListener('input', () => {
+  settings.wallpaperOffsetY = parseFloat($sliderOY.value);
+  $valOY.textContent = settings.wallpaperOffsetY + 'pt';
+  saveSettings();
+  applyWallpaperTransform();
+  syncPreviewTransform();
+});
+$sliderOX.addEventListener('input', () => {
+  settings.wallpaperOffsetX = parseFloat($sliderOX.value);
+  $valOX.textContent = settings.wallpaperOffsetX + 'pt';
+  saveSettings();
+  applyWallpaperTransform();
+  syncPreviewTransform();
+});
+
+// Wallpaper pick
+$wallPickRow.addEventListener('click', () => $wallFile.click());
 
 $wallFile.addEventListener('change', () => {
   const file = $wallFile.files[0];
@@ -1105,16 +1477,89 @@ $wallFile.addEventListener('change', () => {
     settings.wallpaperData = e.target.result;
     saveSettings();
     applyWallpaper(settings.wallpaperData);
-    updateWallpaperThumb();
+    updateWallpaperSettingsUI();
   };
   reader.readAsDataURL(file);
 });
 
-$wallClear.addEventListener('click', () => {
+$wallClearBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
   settings.wallpaperData = null;
   saveSettings();
   applyWallpaper(null);
-  updateWallpaperThumb();
+  updateWallpaperSettingsUI();
+});
+
+// Wallpaper thumbnail → preview
+$wallThumbRow.addEventListener('click', openWallpaperPreview);
+
+// ============================================================
+// WALLPAPER PREVIEW
+// ============================================================
+function buildPreviewUI() {
+  // Build dots
+  $previewDots.innerHTML = '';
+  $previewDots.style.gap = settings.digitCount === 4 ? '24px' : '16px';
+  for (let i = 0; i < settings.digitCount; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = 'width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.8);background:transparent;';
+    $previewDots.appendChild(dot);
+  }
+
+  // Build numpad
+  const keys = [
+    [['1',''],['2','ABC'],['3','DEF']],
+    [['4','GHI'],['5','JKL'],['6','MNO']],
+    [['7','PQRS'],['8','TUV'],['9','WXYZ']],
+  ];
+  $previewNums.innerHTML = '';
+  $previewNums.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
+  keys.forEach(row => {
+    const rowDiv = document.createElement('div');
+    rowDiv.style.cssText = 'display:flex;gap:24px;justify-content:center;';
+    row.forEach(([n, l]) => {
+      const btn = document.createElement('div');
+      btn.style.cssText = 'width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;flex-direction:column;align-items:center;justify-content:center;';
+      btn.innerHTML = `<span style="font-size:36px;font-weight:100;color:rgba(255,255,255,0.7);line-height:1;">${n}</span>` +
+        (l ? `<span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:2px;">${l}</span>` : '');
+      rowDiv.appendChild(btn);
+    });
+    $previewNums.appendChild(rowDiv);
+  });
+  // Last row (0)
+  const lastRow = document.createElement('div');
+  lastRow.style.cssText = 'display:flex;gap:24px;justify-content:center;';
+  for (let i = 0; i < 3; i++) {
+    const btn = document.createElement('div');
+    btn.style.cssText = 'width:80px;height:80px;border-radius:50%;' +
+      (i === 1 ? 'background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;' : 'background:transparent;');
+    if (i === 1) btn.innerHTML = '<span style="font-size:36px;font-weight:100;color:rgba(255,255,255,0.7);line-height:1;">0</span>';
+    lastRow.appendChild(btn);
+  }
+  $previewNums.appendChild(lastRow);
+}
+
+function syncPreviewTransform() {
+  if (!settings.wallpaperData) return;
+  const s = settings.wallpaperScale || 1.2;
+  const ox = settings.wallpaperOffsetX || 0;
+  const oy = settings.wallpaperOffsetY || 0;
+  $previewWall.style.transform = `translate(${ox}px, ${oy}px) scale(${s})`;
+}
+
+function openWallpaperPreview() {
+  if (!settings.wallpaperData) return;
+  buildPreviewUI();
+  $previewWall.style.backgroundImage = 'url(' + settings.wallpaperData + ')';
+  $previewWall.style.backgroundSize = 'cover';
+  $previewWall.style.backgroundPosition = 'center';
+  $previewWall.style.transformOrigin = 'center center';
+  syncPreviewTransform();
+  $preview.classList.add('visible');
+}
+
+$preview.addEventListener('click', () => {
+  $preview.classList.remove('visible');
 });
 
 // ============================================================
@@ -1126,10 +1571,7 @@ function checkUrlPin() {
   if (pinParam && /^\d{4,6}$/.test(pinParam)) {
     settings.forcePin = pinParam;
     saveSettings();
-    // Clean URL
-    const url = window.location.pathname;
-    history.replaceState({}, '', url);
-    // Show toast
+    history.replaceState({}, '', window.location.pathname);
     showToast('✨ PIN セット：' + pinParam);
   }
 }
@@ -1141,7 +1583,7 @@ function showToast(msg) {
 }
 
 // ============================================================
-// SERVICE WORKER REGISTRATION
+// SERVICE WORKER
 // ============================================================
 function registerSW() {
   if ('serviceWorker' in navigator) {
@@ -1154,8 +1596,6 @@ function registerSW() {
 // ============================================================
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('contextmenu', e => e.preventDefault());
-
-// Prevent iOS rubber-band scroll
 document.body.addEventListener('touchstart', e => {
   if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
