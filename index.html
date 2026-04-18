@@ -12,11 +12,6 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      --bg-top: hsl(222, 50%, 20%);
-      --bg-bot: hsl(224, 70%, 9%);
-    }
-
     html, body {
       width: 100%; height: 100%;
       overflow: hidden;
@@ -34,7 +29,7 @@
       position: fixed; inset: 0;
       display: flex; flex-direction: column;
       align-items: center;
-      background: linear-gradient(to bottom, var(--bg-top), var(--bg-bot));
+      background: #000;
       overflow: hidden;
     }
 
@@ -51,43 +46,25 @@
     }
 
     /* Top safe area spacer */
-    #safeTop { height: env(safe-area-inset-top, 20px); flex-shrink: 0; }
-
-    #clockArea {
-      position: relative; z-index: 2;
-      text-align: center;
-      padding-top: 24px;
-      flex-shrink: 0;
-    }
-    #clockTime {
-      font-size: 80px;
-      font-weight: 100;
-      color: white;
-      letter-spacing: -2px;
-      line-height: 1;
-    }
-    #clockDate {
-      font-size: 18px;
-      font-weight: 400;
-      color: rgba(255,255,255,0.92);
-      margin-top: 6px;
-    }
+    #safeTop { height: env(safe-area-inset-top, 44px); flex-shrink: 0; }
+    /* 80px top spacer (matches iOS app) */
+    #topSpacer { height: 80px; flex-shrink: 0; }
 
     .spacer { flex: 1; }
 
     #hintText {
       position: relative; z-index: 2;
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 400;
       color: white;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       flex-shrink: 0;
     }
 
     /* Dots */
     #dotsWrap {
       position: relative; z-index: 2;
-      margin-bottom: 32px;
+      margin-bottom: 40px;
       flex-shrink: 0;
     }
     #dotsRow {
@@ -124,17 +101,17 @@
     #numpad {
       position: relative; z-index: 2;
       display: flex; flex-direction: column;
-      gap: 14px;
-      margin-bottom: 20px;
+      gap: 16px;
+      margin-bottom: 0;
       flex-shrink: 0;
     }
     .numRow {
       display: flex;
-      gap: 20px;
+      gap: 24px;
       justify-content: center;
     }
     .numBtn {
-      width: 78px; height: 78px;
+      width: 80px; height: 80px;
       border-radius: 50%;
       background: rgba(255,255,255,0.175);
       border: none; cursor: pointer;
@@ -148,27 +125,21 @@
       background: rgba(255,255,255,0.42);
     }
     .numBtn.empty { background: transparent; pointer-events: none; }
-    .numBtn.del-btn { background: transparent; }
-    .numBtn.del-btn:active { background: rgba(255,255,255,0.2); }
+    .numBtn.del-btn { background: transparent; pointer-events: none; }
 
     .numBig {
-      font-size: 34px;
-      font-weight: 200;
+      font-size: 36px;
+      font-weight: 100;
       color: white;
       line-height: 1;
     }
     .numSub {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 600;
       color: white;
       letter-spacing: 2px;
       margin-top: -1px;
     }
-    .del-icon {
-      font-size: 22px;
-      color: white;
-    }
-
     /* Bottom buttons */
     #bottomButtons {
       position: relative; z-index: 2;
@@ -176,8 +147,8 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      padding: 0 20px;
-      padding-bottom: env(safe-area-inset-bottom, 20px);
+      padding: 0 16px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 10px);
       flex-shrink: 0;
     }
     .bottomBtn {
@@ -188,7 +159,7 @@
       border: none;
       cursor: pointer;
       padding: 14px 16px;
-      min-width: 90px;
+      min-width: 100px;
       -webkit-appearance: none;
     }
 
@@ -219,20 +190,6 @@
     #fadeOverlay.active {
       opacity: 1;
       pointer-events: all;
-    }
-
-    /* Mode indicator badge (subtle) */
-    #modeBadge {
-      position: absolute;
-      top: calc(env(safe-area-inset-top, 20px) + 8px);
-      right: 16px;
-      z-index: 15;
-      font-size: 11px;
-      color: rgba(255,255,255,0.45);
-      background: rgba(255,255,255,0.1);
-      border-radius: 6px;
-      padding: 3px 7px;
-      pointer-events: none;
     }
 
     /* ============================================================
@@ -297,147 +254,157 @@
       padding: 14px 20px;
       display: flex;
       align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        min-height: 50px;
-      }
-      .settingsRow:first-of-type { border-top: 1px solid rgba(255,255,255,0.08); }
-      .settingsLabel {
-        font-size: 17px;
-        font-weight: 400;
-        color: white;
-        flex-shrink: 0;
-      }
-      .settingsValue {
-        font-size: 17px;
-        color: rgba(255,255,255,0.55);
-      }
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 50px;
+    }
+    .settingsRow:first-of-type { border-top: 1px solid rgba(255,255,255,0.08); }
+    .settingsLabel {
+      font-size: 17px;
+      font-weight: 400;
+      color: white;
+      flex-shrink: 0;
+    }
+    .settingsValue {
+      font-size: 17px;
+      color: rgba(255,255,255,0.55);
+    }
 
-      /* Segmented control */
-      .segControl {
-        display: flex;
-        background: rgba(255,255,255,0.12);
-        border-radius: 8px;
-        padding: 2px;
-        gap: 2px;
-      }
-      .segBtn {
-        font-size: 15px;
-        font-weight: 500;
-        color: rgba(255,255,255,0.6);
-        background: none;
-        border: none;
-        border-radius: 6px;
-        padding: 5px 20px;
-        cursor: pointer;
-        transition: all 0.15s;
-        -webkit-appearance: none;
-      }
-      .segBtn.active {
-        background: rgba(255,255,255,0.95);
-        color: #000;
-      }
+    /* Segmented control */
+    .segControl {
+      display: flex;
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .segBtn {
+      font-size: 15px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      background: none;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-appearance: none;
+    }
+    .segBtn.active {
+      background: rgba(255,255,255,0.95);
+      color: #000;
+    }
 
-      /* Toggle switch */
-      .toggle {
-        position: relative;
-        width: 51px; height: 31px;
-        flex-shrink: 0;
-      }
-      .toggle input { display: none; }
-      .toggleTrack {
-        position: absolute; inset: 0;
-        background: rgba(255,255,255,0.18);
-        border-radius: 15.5px;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      .toggle input:checked + .toggleTrack { background: #34c759; }
-      .toggleThumb {
-        position: absolute;
-        top: 2px; left: 2px;
-        width: 27px; height: 27px;
-        background: white;
-        border-radius: 50%;
-        transition: transform 0.2s;
-        pointer-events: none;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      }
-      .toggle input:checked ~ .toggleThumb { transform: translateX(20px); }
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 51px; height: 31px;
+      flex-shrink: 0;
+    }
+    .toggle input { display: none; }
+    .toggleTrack {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.18);
+      border-radius: 15.5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle input:checked + .toggleTrack { background: #34c759; }
+    .toggleThumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 27px; height: 27px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      pointer-events: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .toggle input:checked ~ .toggleThumb { transform: translateX(20px); }
 
-      /* Slider */
-      .sliderWrap {
-        display: flex; flex-direction: column; gap: 6px;
-        width: 100%;
-      }
-      .sliderRow {
-        display: flex; align-items: center; gap: 10px;
-      }
-      input[type=range] {
-        flex: 1;
-        -webkit-appearance: none;
-        height: 4px;
-        border-radius: 2px;
-        background: rgba(255,255,255,0.2);
-        outline: none;
-      }
-      input[type=range]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 22px; height: 22px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      }
-      .sliderVal {
-        font-size: 15px;
-        color: rgba(255,255,255,0.6);
-        min-width: 36px;
-        text-align: right;
-      }
+    /* Slider */
+    .sliderWrap {
+      display: flex; flex-direction: column; gap: 6px;
+      width: 100%;
+    }
+    .sliderRow {
+      display: flex; align-items: center; gap: 10px;
+    }
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.2);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .sliderVal {
+      font-size: 15px;
+      color: rgba(255,255,255,0.6);
+      min-width: 36px;
+      text-align: right;
+    }
 
-      /* PIN input */
-      .pinInput {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 8px;
-        color: white;
-        font-size: 20px;
-        font-family: -apple-system, monospace;
-        letter-spacing: 6px;
-        padding: 8px 14px;
-        width: 140px;
-        text-align: center;
-        outline: none;
-        -webkit-appearance: none;
-      }
-      .pinInput::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 2px; }
+    /* PIN input */
+    .pinInput {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: white;
+      font-size: 20px;
+      font-family: -apple-system, monospace;
+      letter-spacing: 6px;
+      padding: 8px 14px;
+      width: 140px;
+      text-align: center;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .pinInput::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 2px; }
 
-      /* PIN history */
-      .historyItem {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .historyPin {
-        font-family: -apple-system, monospace;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: 4px;
-      }
-      .historyTime {
-        font-size: 13px;
-        color: rgba(255,255,255,0.45);
-      }
+    /* PIN history */
+    .historyItem {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .historyPin {
+      font-family: -apple-system, monospace;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 4px;
+    }
+    .historyTime {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+    }
 
-      /* Destructive button */
-      .btnDestructive {
-        font-size: 17px;
-        color: #ff453a;
-        background: none;
-        border: none;
-        cursor: pointer;
-        -webkit-appearance: none;
-        padding: 2px      color: rgba(255,255,255,0.5);
+    /* Destructive button */
+    .btnDestructive {
+      font-size: 17px;
+      color: #ff453a;
+      background: none;
+      border: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      padding: 2px 0;
+    }
+
+    /* Wallpaper upload */
+    #wallpaperFileInput { display: none; }
+    .wallpaperThumb {
+      width: 48px; height: 48px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.5);
       font-size: 22px;
       overflow: hidden;
       flex-shrink: 0;
@@ -473,16 +440,7 @@
   <div id="wallpaperOverlay"></div>
 
   <div id="safeTop"></div>
-
-  <div id="modeBadge">デモ</div>
-
-  <!-- Clock -->
-  <div id="clockArea">
-    <div id="clockTime">00:00</div>
-    <div id="clockDate">−</div>
-  </div>
-
-  <div class="spacer"></div>
+  <div id="topSpacer"></div>
 
   <div id="hintText">Touch ID またはパスコードを入力</div>
 
@@ -511,9 +469,11 @@
     <div class="numRow">
       <button class="numBtn empty" aria-hidden="true"></button>
       <button class="numBtn" data-num="0"><span class="numBig">0</span></button>
-      <button class="numBtn del-btn" id="delBtn"><span class="del-icon">⌫</span></button>
+      <button class="numBtn del-btn" aria-hidden="true"></button>
     </div>
   </div>
+
+  <div class="spacer"></div>
 
   <!-- Bottom buttons -->
   <div id="bottomButtons">
@@ -606,7 +566,7 @@
       </div>
       <div class="settingsRow" style="justify-content:flex-start; gap:8px;">
         <span style="font-size:13px; color:rgba(255,255,255,0.45); line-height:1.4;">
-          Shortcutsからは <code style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">?pin=XXXX</code> をURLに付して開くと自動セットされます
+          Shortcutsからは <code style="background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px;">?pin=XXXX</code> をURLに付けて開くと自動セットされます
         </span>
       </div>
     </div>
@@ -688,7 +648,6 @@ let backTapCount = 0;
 let backTapTimer = null;
 let emergencyLock = false;
 let cancelLock = false;
-let clockInterval = null;
 
 const DIGITS = ['0','1','2','3','4','5','6','7','8','9'];
 
@@ -697,8 +656,6 @@ const DIGITS = ['0','1','2','3','4','5','6','7','8','9'];
 // ============================================================
 const $lock        = document.getElementById('lockScreen');
 const $settings    = document.getElementById('settingsScreen');
-const $clockTime   = document.getElementById('clockTime');
-const $clockDate   = document.getElementById('clockDate');
 const $dotsRow     = document.getElementById('dotsRow');
 const $dotsWrap    = document.getElementById('dotsWrap');
 const $numpad      = document.getElementById('numpad');
@@ -707,7 +664,6 @@ const $cancelBtn   = document.getElementById('cancelBtn');
 const $backTap     = document.getElementById('backTapArea');
 const $touchOvl    = document.getElementById('touchOverlay');
 const $fadeOvl     = document.getElementById('fadeOverlay');
-const $modeBadge   = document.getElementById('modeBadge');
 const $wallpaper   = document.getElementById('wallpaper');
 const $wallOvl     = document.getElementById('wallpaperOverlay');
 const $pinToast    = document.getElementById('pinToast');
@@ -730,28 +686,6 @@ const $wallPick    = document.getElementById('wallpaperPickBtn');
 const $wallFile    = document.getElementById('wallpaperFileInput');
 const $wallClear   = document.getElementById('wallpaperClearBtn');
 const $settDone    = document.getElementById('settingsDoneBtn');
-
-// ============================================================
-// CLOCK
-// ============================================================
-const JP_DAYS = ['日','月','火','水','木','金','土'];
-
-function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  $clockTime.textContent = h + ':' + m;
-
-  const mo = now.getMonth() + 1;
-  const d  = now.getDate();
-  const wd = JP_DAYS[now.getDay()];
-  $clockDate.textContent = mo + '月' + d + '日 ' + wd + '曜日';
-}
-
-function startClock() {
-  updateClock();
-  clockInterval = setInterval(updateClock, 1000);
-}
 
 // ============================================================
 // DOTS
@@ -952,19 +886,13 @@ function toggleMode() {
 
 function updateModeUI() {
   if (mode === 'main') {
-    $modeBadge.textContent = 'メイン';
-    $modeBadge.style.color = 'rgba(52,199,89,0.8)';
     $touchOvl.style.display = 'block';
-    // Numpad becomes non-interactive
+    // Numpad stays visible but non-interactive (matched iOS behavior)
     $numpad.style.pointerEvents = 'none';
-    $numpad.style.opacity = '0.5';
     $cancelBtn.style.opacity = '1';
   } else {
-    $modeBadge.textContent = 'デぢ';
-    $modeBadge.style.color = 'rgba(255,255,255,0.45)';
     $touchOvl.style.display = 'none';
     $numpad.style.pointerEvents = '';
-    $numpad.style.opacity = '';
     $cancelBtn.style.opacity = '';
   }
 }
@@ -1018,10 +946,6 @@ document.querySelectorAll('.numBtn[data-num]').forEach(btn => {
     const num = btn.dataset.num;
     if (mode === 'demo' && !animating) demoTapNum(num);
   });
-});
-
-document.getElementById('delBtn').addEventListener('click', () => {
-  if (mode === 'demo' && !animating) demoDel();
 });
 
 $emergBtn.addEventListener('click', toggleDigitCount);
@@ -1245,7 +1169,6 @@ function init() {
   buildDots();
   updateDots();
   updateModeUI();
-  startClock();
   applyWallpaper(settings.wallpaperData);
   registerSW();
 }
