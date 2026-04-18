@@ -1,5 +1,5 @@
 // MagicPasscode Service Worker
-const CACHE_NAME = 'magicpasscode-v1';
+const CACHE_NAME = 'magicpasscode-v2';
 const ASSETS = [
   './',
   './index.html',
